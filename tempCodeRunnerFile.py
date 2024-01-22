@@ -1,0 +1,1 @@
+heckpoint/dino_vit_base_8.pth

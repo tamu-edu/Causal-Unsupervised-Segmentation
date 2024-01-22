@@ -135,7 +135,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_workers', default=int(os.cpu_count() / 8), type=int)
 
     # dataset and baseline
-    parser.add_argument('--data_dir', default='/home/anthony/HyperWorkspace/colab/', type=str)
+    parser.add_argument('--data_dir', default='../', type=str)
     # parser.add_argument('--dataset', default='cocostuff27', type=str)
     parser.add_argument('--dataset', default='cityscapes', type=str)
 

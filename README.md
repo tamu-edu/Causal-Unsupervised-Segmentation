@@ -13,6 +13,47 @@
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/causal-unsupervised-semantic-segmentation/unsupervised-semantic-segmentation-on-pascal-1)](https://paperswithcode.com/sota/unsupervised-semantic-segmentation-on-pascal-1?p=causal-unsupervised-semantic-segmentation)
 
+# Installation 
+In order to install the required packages, please run the following command:
+
+`pip install -r requirements.txt`
+
+`pip install git+https://github.com/lucasb-eyer/pydensecrf.git`
+
+
+## Training On Dataset
+Right now we are testing on the cityscapes dataset and then will test out on a custom dataset. 
+
+Download the Dataset: 
+
+`wget https://marhamilresearch4.blob.core.windows.net/stego-public/pytorch_data/cityscapes.zip `
+
+` unzip cityscapes.zip`
+
+Download the checkpoint weights (dino vit base 8): https://github.com/facebookresearch/dino 
+
+Crop the dataset: 
+
+`python crop_dataset.py --dataset "cityscapes"  --crop_type "five"`
+
+We will be using DINO+CAUSE-TR for training, since it had the best results. To Run use the following commands. This assumes a single GPU used for training.
+
+`python train_mediator.py`
+
+`python train_front_door_tr.py `
+
+`python fine_tuning_tr.py`
+
+Testing the below file 
+`python test_tr.py`
+
+# Below is the original README.md
+
+
+
+
+
+
 This is pytorch implementation code for realizing the technical part of *CAusal Unsupervised Semantic sEgmentation (CAUSE)* to improve performance of unsupervised semantic segmentation.
 This code is further developed by two baseline codes of [HP: Leveraging Hidden Positives for Unsupervised Semantic Segmentation](https://github.com/hynnsk/HP) accepted in [CVPR 2023](https://openaccess.thecvf.com/content/CVPR2023/papers/Seong_Leveraging_Hidden_Positives_for_Unsupervised_Semantic_Segmentation_CVPR_2023_paper.pdf)
 and [STEGO: Unsupervised Semantic Segmentation by Distilling Feature Correspondences](https://github.com/mhamilton723/STEGO) accepted in [ICLR 2022](https://iclr.cc/virtual/2022/poster/6068).

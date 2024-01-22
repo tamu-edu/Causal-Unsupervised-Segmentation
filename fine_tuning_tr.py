@@ -276,7 +276,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # model parameter
     parser.add_argument('--NAME-TAG', default='CAUSE-TR', type=str)
-    parser.add_argument('--data_dir', default='/home/anthony/HyperWorkspace/colab/', type=str)
+    parser.add_argument('--data_dir', default='../', type=str)
     parser.add_argument('--dataset', default='cityscapes', type=str)
     parser.add_argument('--ckpt', default='checkpoint/dino_vit_base_8.pth', type=str)
     parser.add_argument('--epoch', default=5, type=int)

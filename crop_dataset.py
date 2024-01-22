@@ -83,7 +83,7 @@ def my_app():
     parser.add_argument('--num_workers', default=int(os.cpu_count() / 8), type=int)
 
     # dataset and baseline
-    parser.add_argument('--data_dir', default='/home/anthony/HyperWorkspace/colab', type=str)
+    parser.add_argument('--data_dir', default='../', type=str)
     parser.add_argument('--dataset', default='cityscapes', type=str)
     parser.add_argument('--gpu', default=0, type=int)
     parser.add_argument('--distributed', default='false', type=str2bool)
