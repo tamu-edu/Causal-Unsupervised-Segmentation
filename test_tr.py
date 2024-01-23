@@ -14,49 +14,50 @@ def test(args, net, segment, cluster, nice, test_loader, cmap):
     prog_bar = tqdm(enumerate(test_loader), total=len(test_loader), leave=True)
     # originally Pool(40), but most computers do not have 40 cores
     
-    with Pool(10) as pool:
-        for _, batch in prog_bar:
-            # image and label and self supervised feature
-            ind = batch["ind"].cuda()
-            img = batch["img"].cuda()
-            label = batch["label"].cuda()
-            
-            print('starting autocast')
-            with autocast():
-                # intermediate feature
-                feat = net(img)[:, 1:, :]
-                feat_flip = net(img.flip(dims=[3]))[:, 1:, :]
-            seg_feat = transform(segment.head_ema(feat))
-            seg_feat_flip = transform(segment.head_ema(feat_flip))
-            seg_feat = untransform((seg_feat + seg_feat_flip.flip(dims=[3])) / 2)
+    # with Pool(20) as pool:
+    for _, batch in prog_bar:
+        # image and label and self supervised feature
+        ind = batch["ind"].cuda()
+        img = batch["img"].cuda()
+        label = batch["label"].cuda()
+        
+        # print('starting autocast')
+        with autocast():
+            # intermediate feature
+            feat = net(img)[:, 1:, :]
+            feat_flip = net(img.flip(dims=[3]))[:, 1:, :]
+        seg_feat = transform(segment.head_ema(feat))
+        seg_feat_flip = transform(segment.head_ema(feat_flip))
+        seg_feat = untransform((seg_feat + seg_feat_flip.flip(dims=[3])) / 2)
 
-            print('starting interp')
-            # interp feat
-            interp_seg_feat = F.interpolate(transform(seg_feat), label.shape[-2:], mode='bilinear', align_corners=False)
+        # print('starting interp')
+        # interp feat
+        interp_seg_feat = F.interpolate(transform(seg_feat), label.shape[-2:], mode='bilinear', align_corners=False)
+# 
+        # print('starting cluster')
+        # cluster preds
+        cluster_preds = cluster.forward_centroid(untransform(interp_seg_feat), crf=True)
 
-            print('starting cluster')
-            # cluster preds
-            cluster_preds = cluster.forward_centroid(untransform(interp_seg_feat), crf=True)
+        # print('starting crf')
+        # crf
+        # crf_preds = do_crf(pool, img, cluster_preds).argmax(1).cuda()
+        crf_preds = do_crf( img, cluster_preds).argmax(1).cuda()
 
-            print('starting crf')
-            # crf
-            crf_preds = do_crf(pool, img, cluster_preds).argmax(1).cuda()
+        # print('starting nice')
+        # nice evaluation
+        _, desc_nice = nice.eval(crf_preds, label)
 
-            print('starting nice')
-            # nice evaluation
-            _, desc_nice = nice.eval(crf_preds, label)
+        # print('starting hungarian')
+        # hungarian
+        hungarian_preds = nice.do_hungarian(crf_preds)
 
-            print('starting hungarian')
-            # hungarian
-            hungarian_preds = nice.do_hungarian(crf_preds)
+        # print('starting save')
+        # save images
+        save_all(args, ind, img, label, cluster_preds.argmax(dim=1), crf_preds, hungarian_preds, cmap, is_tr=True)
 
-            print('starting save')
-            # save images
-            save_all(args, ind, img, label, cluster_preds.argmax(dim=1), crf_preds, hungarian_preds, cmap, is_tr=True)
-
-            # real-time print
-            desc = f'{desc_nice}'
-            prog_bar.set_description(desc, refresh=True)
+        # real-time print
+        desc = f'{desc_nice}'
+        prog_bar.set_description(desc, refresh=True)
 
     # evaludation metric reset
     nice.reset()

@@ -1,1 +1,1 @@
-heckpoint/dino_vit_base_8.pth
+do_cr

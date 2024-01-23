@@ -273,15 +273,23 @@ def dense_crf(image_tensor: torch.FloatTensor, output_logits: torch.FloatTensor,
 
     Q = d.inference(MAX_ITER)
     Q = np.array(Q).reshape((c, h, w))
+    # print("hi")
     return Q
 
 def _apply_crf(tup, max_iter):
     return dense_crf(tup[0], tup[1], max_iter=max_iter)
 
-def do_crf(pool, img_tensor, prob_tensor, max_iter=10):
-    from functools import partial
-    outputs = pool.map(partial(_apply_crf, max_iter=max_iter), zip(img_tensor.detach().cpu(), prob_tensor.detach().cpu()))
+# def do_crf(pool, img_tensor, prob_tensor, max_iter=10):
+#     from functools import partial
+#     outputs = pool.map(partial(_apply_crf, max_iter=max_iter), zip(img_tensor.detach().cpu(), prob_tensor.detach().cpu()))
+#     return torch.cat([torch.from_numpy(arr).unsqueeze(0) for arr in outputs], dim=0)
+
+def do_crf(img_tensor, prob_tensor, max_iter=10): 
+    outputs = []
+    for img, prob in zip(img_tensor.detach().cpu(), prob_tensor.detach().cpu()):
+        outputs.append(_apply_crf((img, prob), max_iter=max_iter))
     return torch.cat([torch.from_numpy(arr).unsqueeze(0) for arr in outputs], dim=0)
+
 
 def create_pascal_label_colormap():
     def bit_get(val, idx):
