@@ -30,7 +30,7 @@ Download the Dataset:
 
 ` unzip cityscapes.zip`
 
-Download the checkpoint weights (dino vit base 8): https://github.com/facebookresearch/dino 
+Download the checkpoint weights (dino vit base 8 backbone): https://github.com/facebookresearch/dino 
 
 Crop the dataset: 
 

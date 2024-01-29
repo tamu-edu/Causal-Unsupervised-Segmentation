@@ -520,6 +520,7 @@ class CroppedDataset(Dataset):
         self.target_transform = target_transform
         self.img_dir = join(self.root, "img", self.split)
         self.label_dir = join(self.root, "label", self.split)
+        print(self.img_dir)
         self.num_images = len(os.listdir(self.img_dir))
         assert self.num_images == len(os.listdir(self.label_dir))
 
@@ -628,7 +629,9 @@ class ContrastiveSegDataset(Dataset):
             dataset_class = CroppedDataset
             extra_args = dict(dataset_name="pascalvoc", crop_type='super', crop_ratio=0)
         else:
-            raise ValueError("Unknown dataset: {}".format(dataset_name))
+            # raise ValueError("Unknown dataset: {}".format(dataset_name))
+            dataset_class = CroppedDataset
+            extra_args = dict(dataset_name=dataset_name, crop_type='super', crop_ratio=0)
 
         self.dataset = dataset_class(
             root=pytorch_data_dir,
