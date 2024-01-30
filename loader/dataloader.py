@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from torchvision.datasets.cityscapes import Cityscapes
 from torchvision.datasets import VOCSegmentation
-
+from torchvision.io import read_image
 
 from utils.utils import *
 
@@ -31,6 +31,9 @@ def dataloader(args, no_ddp_train_shuffle=True):
     elif args.dataset == "coco171":
         args.n_classes = 171
         get_transform = get_cococity_transform
+    else:
+        args.n_classes = 6
+        get_transform = get_pascal_transform
 
     # train dataset
     train_dataset = ContrastiveSegDataset(
@@ -520,7 +523,6 @@ class CroppedDataset(Dataset):
         self.target_transform = target_transform
         self.img_dir = join(self.root, "img", self.split)
         self.label_dir = join(self.root, "label", self.split)
-        print(self.img_dir)
         self.num_images = len(os.listdir(self.img_dir))
         assert self.num_images == len(os.listdir(self.label_dir))
 
@@ -570,6 +572,61 @@ class PascalVOC(VOCSegmentation):
                     download=False, 
                     transforms=transform,
                     target_transforms=target_transform)
+
+class GeneralDataset(Dataset):
+    # attempt to make it more general as compared to cropped dataset
+    def __init__(self, root, crop_type, crop_ratio, image_set, transform, target_transform, dataset_name, first_nonvoid, extension_label, extension_img):
+        super(GeneralDataset, self).__init__()
+        
+        self.dataset_name = dataset_name
+        self.split = image_set
+        
+        self.root = join(root, dataset_name)
+        # print("root: ", self.root)
+        if image_set == "train":
+            our_image_set = "train"
+        else:
+            our_image_set = image_set
+        # self.inner_loader = inner_loader_class(self.root, our_image_set,
+        #                                        mode="fine",
+        #                                        target_type="semantic",
+        #                                        transform=None,
+        #                                        target_transform=None)
+        self.transform = transform
+        self.target_transform = target_transform
+        self.first_nonvoid = first_nonvoid
+        self.img_dir = join(self.root, "img", self.split)
+        self.label_dir = join(self.root, "label", self.split)
+        self.num_images = len(os.listdir(self.img_dir))
+        assert self.num_images == len(os.listdir(self.label_dir))
+        # create an array with the names of label imgs in the directory
+        self.img_labels = [f for f in os.listdir(self.label_dir) if os.path.splitext(f)[1] == extension_label]
+        self.img_imgs = [f for f in os.listdir(self.img_dir) if os.path.splitext(f)[1] == extension_img]
+        # print(self.num_images)
+        
+
+    def __getitem__(self, index):
+        label_path = os.path.join(self.label_dir, self.img_labels[index])
+        img_path = os.path.join(self.img_dir, self.img_imgs[index])
+        # print('label name ',label_path, 'img name',img_path)
+        image = Image.open(img_path).convert('RGB')
+        target = Image.open(label_path)
+        
+        seed = np.random.randint(2147483647)
+        random.seed(seed)
+        torch.manual_seed(seed)
+        image = self.transform(image)
+        random.seed(seed)
+        torch.manual_seed(seed)
+        target = self.target_transform(target)
+        
+        target = target - self.first_nonvoid
+        target[target < 0] = -1
+        mask = target == -1
+        return image, target.squeeze(0), mask
+    
+    def __len__(self):
+        return self.num_images
 
 class ContrastiveSegDataset(Dataset):
     def __init__(self,
@@ -630,8 +687,17 @@ class ContrastiveSegDataset(Dataset):
             extra_args = dict(dataset_name="pascalvoc", crop_type='super', crop_ratio=0)
         else:
             # raise ValueError("Unknown dataset: {}".format(dataset_name))
-            dataset_class = CroppedDataset
-            extra_args = dict(dataset_name=dataset_name, crop_type='super', crop_ratio=0)
+            crop_ratio = 0.5 # hardcoded for now , should be changed to arg
+            first_nonvoid=0
+            extension_label='.png'
+            extension_img='.jpg'
+            self.image_set='train' # hardcoded for now , should be changed to arg to allow for the val set
+            extra_args = dict(dataset_name=dataset_name, crop_type=crop_type, crop_ratio=crop_ratio, first_nonvoid=first_nonvoid, extension_label=extension_label, extension_img=extension_img)
+            # below works for crop dataset but not train mediator
+            dataset_class = GeneralDataset
+            # print('done')
+            # dataset_class = CroppedDataset
+            
 
         self.dataset = dataset_class(
             root=pytorch_data_dir,
