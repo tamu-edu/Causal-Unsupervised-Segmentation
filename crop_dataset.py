@@ -60,7 +60,7 @@ class RandomCropComputer(Dataset):
         self.dataset = ContrastiveSegDataset(
             pytorch_data_dir=args.data_dir,
             dataset_name=args.dataset,
-            crop_type=None,
+            crop_type=crop_type, #changed from none
             image_set=img_set,
             transform=T.ToTensor(),
             target_transform=ToTargetTensor(),
@@ -87,9 +87,11 @@ def my_app():
     parser.add_argument('--dataset', default='cityscapes', type=str)
     parser.add_argument('--gpu', default=0, type=int)
     parser.add_argument('--distributed', default='false', type=str2bool)
-    parser.add_argument('--crop_type', default='five', type=str)
-    parser.add_argument('--crop_ratio', default=0.5, type=float)
+    parser.add_argument('--crop_type', default='super', type=str)
+    parser.add_argument('--crop_ratio', default=0, type=float)
 
+    # in dataloader.py  need to change the else statement to match the args
+    
     args = parser.parse_args()
     
     # setting gpu id of this process
@@ -99,6 +101,8 @@ def my_app():
     dataset = RandomCropComputer(args, args.dataset, "train", args.crop_type, args.crop_ratio)
     loader = DataLoader(dataset, 1, shuffle=False, num_workers=args.num_workers, collate_fn=lambda l: l)
     for batch in tqdm(loader):
+        
+        print(batch) 
         imgs = batch[0]['img']
         labels = batch[0]['label']
         for img, label in zip(imgs, labels):
