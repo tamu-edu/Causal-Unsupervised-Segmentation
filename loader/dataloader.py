@@ -32,7 +32,9 @@ def dataloader(args, no_ddp_train_shuffle=True):
         args.n_classes = 171
         get_transform = get_cococity_transform
     else:
-        args.n_classes = 6
+        args.n_classes = 6 #freiburg
+        args.n_classes = 20 #rellis
+        args.n_classes = 24 #atlas
         get_transform = get_pascal_transform
 
     # train dataset
@@ -606,9 +608,16 @@ class GeneralDataset(Dataset):
         
 
     def __getitem__(self, index):
-        label_path = os.path.join(self.label_dir, self.img_labels[index])
-        img_path = os.path.join(self.img_dir, self.img_imgs[index])
+        # label_path = os.path.join(self.label_dir, self.img_labels[index])
+        # img_path = os.path.join(self.img_dir, self.img_imgs[index])
         # print('label name ',label_path, 'img name',img_path)
+        
+        img_name, img_name_ext = os.path.splitext(self.img_labels[index])
+        label_path = os.path.join(self.label_dir, img_name+ '.png')
+        img_path = os.path.join(self.img_dir, img_name+'.png')
+        
+        # print('label name ',label_path, 'img name',img_path)
+        
         image = Image.open(img_path).convert('RGB')
         target = Image.open(label_path)
         
