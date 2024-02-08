@@ -524,6 +524,7 @@ class CroppedDataset(Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.img_dir = join(self.root, "img", self.split)
+        print(self.img_dir)
         self.label_dir = join(self.root, "label", self.split)
         self.num_images = len(os.listdir(self.img_dir))
         assert self.num_images == len(os.listdir(self.label_dir))
@@ -577,7 +578,7 @@ class PascalVOC(VOCSegmentation):
 
 class GeneralDataset(Dataset):
     # attempt to make it more general as compared to cropped dataset
-    def __init__(self, root, crop_type, crop_ratio, image_set, transform, target_transform, dataset_name, first_nonvoid, extension_label, extension_img):
+    def __init__(self, root, image_set, transform, target_transform, dataset_name, first_nonvoid, extension_label, extension_img):
         super(GeneralDataset, self).__init__()
         
         self.dataset_name = dataset_name
@@ -597,6 +598,7 @@ class GeneralDataset(Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.first_nonvoid = first_nonvoid
+        
         self.img_dir = join(self.root, "img", self.split)
         self.label_dir = join(self.root, "label", self.split)
         self.num_images = len(os.listdir(self.img_dir))
@@ -605,6 +607,9 @@ class GeneralDataset(Dataset):
         self.img_labels = [f for f in os.listdir(self.label_dir) if os.path.splitext(f)[1] == extension_label]
         self.img_imgs = [f for f in os.listdir(self.img_dir) if os.path.splitext(f)[1] == extension_img]
         # print(self.num_images)
+        self.extension_label = extension_label
+        self.extension_img = extension_img
+        print(self.label_dir)
         
 
     def __getitem__(self, index):
@@ -612,11 +617,13 @@ class GeneralDataset(Dataset):
         # img_path = os.path.join(self.img_dir, self.img_imgs[index])
         # print('label name ',label_path, 'img name',img_path)
         
+        
         img_name, img_name_ext = os.path.splitext(self.img_labels[index])
-        label_path = os.path.join(self.label_dir, img_name+ '.png')
-        img_path = os.path.join(self.img_dir, img_name+'.png')
+        label_path = os.path.join(self.label_dir, img_name+ self.extension_label)
+        img_path = os.path.join(self.img_dir, img_name+ self.extension_img)
         
         # print('label name ',label_path, 'img name',img_path)
+        
         
         image = Image.open(img_path).convert('RGB')
         target = Image.open(label_path)
@@ -696,12 +703,15 @@ class ContrastiveSegDataset(Dataset):
             extra_args = dict(dataset_name="pascalvoc", crop_type='super', crop_ratio=0)
         else:
             # raise ValueError("Unknown dataset: {}".format(dataset_name))
-            crop_ratio = 0.5 # hardcoded for now , should be changed to arg
+            
+            
+            # crop_ratio = 0.5 # hardcoded for now , should be changed to arg
             first_nonvoid=0
             extension_label='.png'
+            # print('here')
             extension_img='.jpg'
-            self.image_set='train' # hardcoded for now , should be changed to arg to allow for the val set
-            extra_args = dict(dataset_name=dataset_name, crop_type=crop_type, crop_ratio=crop_ratio, first_nonvoid=first_nonvoid, extension_label=extension_label, extension_img=extension_img)
+            # self.image_set='train' # hardcoded for now , should be changed to arg to allow for the val set
+            extra_args = dict(dataset_name=dataset_name,  first_nonvoid=first_nonvoid, extension_label=extension_label, extension_img=extension_img)
             # below works for crop dataset but not train mediator
             dataset_class = GeneralDataset
             # print('done')
