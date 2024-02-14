@@ -5,6 +5,7 @@ import torchvision
 import matplotlib
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
+import json
 
 invTrans = transforms.Compose([transforms.Normalize(mean=[0., 0., 0.],
                                                     std=[1 / 0.229, 1 / 0.224, 1 / 0.225]),
@@ -290,6 +291,49 @@ def do_crf(img_tensor, prob_tensor, max_iter=10):
         outputs.append(_apply_crf((img, prob), max_iter=max_iter))
     return torch.cat([torch.from_numpy(arr).unsqueeze(0) for arr in outputs], dim=0)
 
+
+def create_custom_colormap(json_input):
+    # create a custom colormap from a json file 
+    file_path = json_input
+    if os.path.isfile(file_path):
+        # print(f'The file {file_path} exists.')
+        json_open = open(file_path)
+        json_input = json.load(json_open)
+    else:
+        print(f'The file {file_path} does not exist.')
+        assert os.path.isfile(file_path)
+    
+    
+    
+
+    # Get the color information
+    color_info = json_input["Color_Information"]
+
+    # print(color_info)
+    # Create a dictionary to hold the colormap
+    colormap = {}
+
+    # Iterate over each class in the color information
+    for class_name, color_values in color_info.items():
+        # Get the class value
+        class_value = int(color_values["class_value"])
+
+        # Get the RGB values
+        rgb_values = np.array([color_values["red_value"]/255, color_values["green_value"]/255, color_values["blue_value"]/255])
+
+        # Add the RGB values to the colormap
+        colormap[class_value] = rgb_values
+        
+        # colormap = np.append(colormap,rgb_values, axis=0)
+
+    # print(colormap)
+    colormap_array = np.stack(list(colormap.values()))
+    
+    while(colormap_array.shape[0] < 512):
+        colormap_array = np.append(colormap_array, [[0,0,0]], axis=0)
+
+    # print(colormap_array)
+    return colormap_array 
 
 def create_pascal_label_colormap():
     def bit_get(val, idx):

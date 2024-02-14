@@ -32,9 +32,11 @@ def dataloader(args, no_ddp_train_shuffle=True):
         args.n_classes = 171
         get_transform = get_cococity_transform
     else:
-        args.n_classes = 6 #freiburg
-        args.n_classes = 20 #rellis
-        args.n_classes = 24 #atlas
+        # args.n_classes = 6 #freiburg
+        # args.n_classes = 20 #rellis
+        # args.n_classes = 24 #atlas
+        # should be passesd in through parser args in jupyter file
+        # print("number of classes in dataset:", args.n_classes)
         get_transform = get_pascal_transform
 
     # train dataset
@@ -524,6 +526,7 @@ class CroppedDataset(Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.img_dir = join(self.root, "img", self.split)
+        print(self.img_dir)
         self.label_dir = join(self.root, "label", self.split)
         self.num_images = len(os.listdir(self.img_dir))
         assert self.num_images == len(os.listdir(self.label_dir))
@@ -577,7 +580,7 @@ class PascalVOC(VOCSegmentation):
 
 class GeneralDataset(Dataset):
     # attempt to make it more general as compared to cropped dataset
-    def __init__(self, root, crop_type, crop_ratio, image_set, transform, target_transform, dataset_name, first_nonvoid, extension_label, extension_img):
+    def __init__(self, root, image_set, transform, target_transform, dataset_name, first_nonvoid):
         super(GeneralDataset, self).__init__()
         
         self.dataset_name = dataset_name
@@ -597,14 +600,19 @@ class GeneralDataset(Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.first_nonvoid = first_nonvoid
+        
         self.img_dir = join(self.root, "img", self.split)
         self.label_dir = join(self.root, "label", self.split)
         self.num_images = len(os.listdir(self.img_dir))
         assert self.num_images == len(os.listdir(self.label_dir))
         # create an array with the names of label imgs in the directory
-        self.img_labels = [f for f in os.listdir(self.label_dir) if os.path.splitext(f)[1] == extension_label]
-        self.img_imgs = [f for f in os.listdir(self.img_dir) if os.path.splitext(f)[1] == extension_img]
+        # self.img_labels = [f for f in os.listdir(self.label_dir) if os.path.splitext(f)[1] == extension_label]
+        self.img_labels = [f for f in os.listdir(self.label_dir)]
+        # self.img_imgs = [f for f in os.listdir(self.img_dir) if os.path.splitext(f)[1] == extension_img]
         # print(self.num_images)
+        # self.extension_label = extension_label
+        # self.extension_img = extension_img
+        # print(self.label_dir)
         
 
     def __getitem__(self, index):
@@ -612,11 +620,25 @@ class GeneralDataset(Dataset):
         # img_path = os.path.join(self.img_dir, self.img_imgs[index])
         # print('label name ',label_path, 'img name',img_path)
         
-        img_name, img_name_ext = os.path.splitext(self.img_labels[index])
-        label_path = os.path.join(self.label_dir, img_name+ '.png')
-        img_path = os.path.join(self.img_dir, img_name+'.png')
         
-        # print('label name ',label_path, 'img name',img_path)
+        img_name, extra = os.path.splitext(self.img_labels[index])
+        # print('img name', img_name)
+        
+        
+        if os.path.exists(os.path.join(self.label_dir, img_name+ '.png')):
+        
+            label_path = os.path.join(self.label_dir, img_name+ '.png')
+        elif os.path.exists(os.path.join(self.label_dir, img_name+ '.jpg')):
+            label_path = os.path.join(self.label_dir, img_name+ '.jpg')
+        else:
+            print('label path does not exist for:', os.path.join(self.label_dir, img_name))
+        
+        if os.path.exists(os.path.join(self.img_dir, img_name+ '.jpg')):
+            img_path = os.path.join(self.img_dir, img_name+ '.jpg')
+        elif os.path.exists(os.path.join(self.img_dir, img_name+ '.png')):
+            img_path = os.path.join(self.img_dir, img_name+ '.png')        
+        else:
+            print('img path does not exist for:', os.path.join(self.img_dir, img_name))
         
         image = Image.open(img_path).convert('RGB')
         target = Image.open(label_path)
@@ -646,6 +668,7 @@ class ContrastiveSegDataset(Dataset):
                  transform,
                  target_transform,
                  extra_transform=None,
+                 first_nonvoid=1,
                  ):
         super(ContrastiveSegDataset).__init__()
         self.image_set = image_set
@@ -696,15 +719,8 @@ class ContrastiveSegDataset(Dataset):
             extra_args = dict(dataset_name="pascalvoc", crop_type='super', crop_ratio=0)
         else:
             # raise ValueError("Unknown dataset: {}".format(dataset_name))
-            crop_ratio = 0.5 # hardcoded for now , should be changed to arg
-            first_nonvoid=0
-            extension_label='.png'
-            extension_img='.jpg'
-            self.image_set='train' # hardcoded for now , should be changed to arg to allow for the val set
-            extra_args = dict(dataset_name=dataset_name, crop_type=crop_type, crop_ratio=crop_ratio, first_nonvoid=first_nonvoid, extension_label=extension_label, extension_img=extension_img)
-            # below works for crop dataset but not train mediator
+            extra_args = dict(dataset_name=dataset_name,  first_nonvoid=first_nonvoid)
             dataset_class = GeneralDataset
-            # print('done')
             # dataset_class = CroppedDataset
             
 
